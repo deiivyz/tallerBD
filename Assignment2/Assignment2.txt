@@ -182,3 +182,58 @@ CREATE TRIGGER TriSeqInsuranceClaims BEFORE INSERT ON Insurance_Claims FOR EACH 
 BEGIN
   SELECT SequenceInsuranceClaims.NEXTVAL INTO :new.Id_Insurance_Claim FROM DUAL;
 END;
+
+-- PUNTO 6
+CREATE OR REPLACE PROCEDURE newService(idVehicle IN NUMBER) AS
+    nameSer VARCHAR(30) := '';
+BEGIN
+    SELECT nameService(idVehicle) INTO nameSer FROM DUAL; 
+    
+    IF (nameSer) IS NOT NULL
+    THEN
+        INSERT INTO SERVICES(NAME_SERVICE, VEHICLE, ISSUE_DATE, DESCRIPTION_SERVICE, STATUS_SERVICE)
+        VALUES (nameSer, idVehicle, CURRENT_DATE, 'Mandatory service', 'Pending');
+        
+        INSERT INTO SERVICE_DETAILS(SERVICE, SERVICE_TYPE, STATUS_SERVICE_DETAIL)
+        SELECT SequenceServices.CURRVAL, ID_SERVICE_TYPE, 'Pending'
+        FROM SERVICE_TYPES;
+        
+        COMMIT;
+    END IF;
+END;
+
+-- PUNTO 7
+CREATE OR REPLACE TRIGGER TriggerUpdateMilage AFTER UPDATE OF MILEAGE_VEHICLE ON VEHICLES 
+FOR EACH ROW
+BEGIN
+  newService(:new.Id_Vehicle);
+END;
+
+-- Punto 8
+CREATE OR REPLACE PROCEDURE decreaseValueVehicle AS
+newValue NUMBER := 0;
+veId NUMBER(10,0) := 0;
+veValue NUMBER(12,2) := 0;
+veType VARCHAR2(30 BYTE) := '';
+CURSOR vehiclesCursor IS
+    SELECT VE.ID_VEHICLE, VE.CURRENT_VALUE_VEHICLE, VT.DESCRIPTION_VEHICLE_TYPE 
+    FROM VEHICLES VE
+    INNER JOIN VEHICLE_TYPES VT ON VT.ID_VEHICLE_TYPE = VE.VEHICLE_TYPE;
+BEGIN
+    OPEN vehiclesCursor;
+    LOOP FETCH vehiclesCursor INTO veId, veValue, veType;
+        IF veType IN ('Car', 'Moped', 'Motorcycle', 'Trike motorcycle') THEN
+            newValue := veValue - (veValue * 0.02); 
+        ELSIF veType IN ('Car', 'Light rigid heavy vehicle', 'Medium rigid heavy vehicle') THEN
+            newValue := veValue - (veValue * 0.03); 
+        ELSE
+            newValue := veValue - (veValue * 0.05); 
+        END IF;
+        
+        UPDATE VEHICLES
+        SET CURRENT_VALUE_VEHICLE = newValue
+        WHERE ID_VEHICLE = veId;
+        
+    END LOOP;
+    CLOSE vehiclesCursor;
+END; 
