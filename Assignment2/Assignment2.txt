@@ -1,1 +1,184 @@
 -- Taller 2 Bases de datos
+
+-- PUNTO 2
+CREATE SEQUENCE SequenceDrivers START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceVehicleTypes START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceVehicles START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceDriverQualifications START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceVehiclesPerDriver START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceServiceTypes START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceServices START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceServiceDetails START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceRepairCosts START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SequenceInsuranceClaims START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE Drivers 
+( 
+  Id_Driver NUMERIC(10),
+  Full_name_Driver VARCHAR2(50) NOT NULL,
+  Address_Driver VARCHAR2(100) NOT NULL,
+  Phone_Driver VARCHAR2(10) NOT NULL,
+  Cellphone_Driver VARCHAR2(10) NOT NULL,
+  CONSTRAINT PK_Drivers PRIMARY KEY (Id_Driver)
+);
+
+CREATE TABLE Vehicle_Types 
+(
+  Id_Vehicle_Type NUMBER(10),
+  Description_Vehicle_Type VARCHAR2(30) UNIQUE,
+  Special_Qualification VARCHAR(1) NOT NULL ,
+  CONSTRAINT Pk_Vehicle_Types PRIMARY KEY (Id_Vehicle_Type)
+);
+
+CREATE TABLE Vehicles 
+(
+  Id_Vehicle NUMBER(10),
+  Number_Vehicle VARCHAR(20) NOT NULL UNIQUE,
+  Plate_Vehicle VARCHAR(10) NULL UNIQUE,
+  State_Vehicle VARCHAR(20) NOT NULL,
+  Mileage_Vehicle VARCHAR(7) NOT NULL,
+  Model_Vehicle VARCHAR(5) NOT NULL,
+  Current_Value_Vehicle NUMBER(12,2) NOT NULL,
+  Replacement_Value_Vehicle NUMBER(12,2) NOT NULL,
+  Taxed_Date_Vehicle DATE NOT NULL,
+  Bought_Date_Vehicle DATE NOT NULL,
+  Vehicle_Type NUMBER(10) NOT NULL,
+  Number_Policy_Vehicle VARCHAR(20) NOT NULL,
+  Written_Of VARCHAR(100) NOT NULL,
+  CONSTRAINT PkVehicles PRIMARY KEY (Id_Vehicle),
+  CONSTRAINT FkVehi_VehicleTypes FOREIGN KEY (Vehicle_Type) REFERENCES Vehicle_Types(Id_Vehicle_Type),
+  CONSTRAINT CoStateVehicle CHECK(State_Vehicle IN ('Active', 'Inactive', 'Repairing', 'Sold')),
+  CONSTRAINT CoModelVehicle CHECK(Model_Vehicle IN ('2010', '2011'))
+);
+
+CREATE TABLE Driver_Qualifications 
+(
+  Id_Driver_Qualification NUMBER(10),
+  Driver NUMBER(10) NOT NULL,
+  Vehicle_Type NUMBER(10) NOT NULL,
+  Created_Date_Qualification DATE NOT NULL,
+  State_Qualification VARCHAR(20) NOT NULL,
+  CONSTRAINT PkDriverQualifications PRIMARY KEY (Id_Driver_Qualification),
+  CONSTRAINT FkDrQu_Drivers FOREIGN KEY (Driver) REFERENCES Drivers(Id_Driver),
+  CONSTRAINT FkDrQu_VehicleTypes FOREIGN KEY (Vehicle_Type) REFERENCES Vehicle_Types(Id_Vehicle_Type),
+  CONSTRAINT CoStateQualification CHECK(State_Qualification IN ('Active', 'Inactive', 'Expired', 'Disqualified'))
+);
+
+CREATE TABLE VehiclesPer_Driver
+(
+  Id_Vehicle_PerDriver NUMBER(10),
+  Driver NUMBER(10) NOT NULL,
+  Vehicle NUMBER(10) NOT NULL,
+  CONSTRAINT PkVehiclesPerDriver PRIMARY KEY (Id_Vehicle_PerDriver),
+  CONSTRAINT FkVeDr_Drivers FOREIGN KEY (Driver) REFERENCES Drivers(Id_Driver),
+  CONSTRAINT FkVeDr_Vehicles FOREIGN KEY (Vehicle) REFERENCES Vehicles(Id_Vehicle)
+);
+
+CREATE TABLE Service_Types
+(
+  Id_Service_Type NUMBER(10),
+  Description_Service_Type VARCHAR2(30) UNIQUE,
+  CONSTRAINT PkServiceTypes PRIMARY KEY (Id_Service_Type)
+);
+
+CREATE TABLE Services
+(
+  Id_Service NUMBER(10),
+  Name_Service VARCHAR(50) NOT NULL,
+  Vehicle NUMBER(10) NOT NULL,
+  Issue_Date DATE NOT NULL,
+  Description_Service VARCHAR(2000) NULL,
+  Status_Service VARCHAR(20) NULL,
+  CONSTRAINT PkServices PRIMARY KEY (Id_Service),
+  CONSTRAINT FkServ_Vehicles FOREIGN KEY (Vehicle) REFERENCES Vehicles(Id_Vehicle),
+  CONSTRAINT CoStatusService CHECK(Status_Service IN ('Pending', 'Scheduled', 'Ok'))
+);
+
+CREATE TABLE Service_Details
+(
+  Id_Service_Detail NUMBER(10),
+  Service NUMBER(10) NOT NULL,
+  Service_Type NUMBER(10) NOT NULL,
+  Status_Service_Detail VARCHAR(20) NULL,
+  CONSTRAINT PkServiceDetails PRIMARY KEY (Id_Service_Detail),
+  CONSTRAINT FkSeDe_Services FOREIGN KEY (Service) REFERENCES Services(Id_Service),
+  CONSTRAINT FkSeDe_Service_Types FOREIGN KEY (Service_Type) REFERENCES Service_Types(Id_Service_Type),
+  CONSTRAINT CoStatusServiceDetail CHECK(Status_Service_Detail IN ('OK', 'Pending', 'Needs_repair', 'Observations'))
+);
+
+CREATE TABLE Repair_Costs
+(
+  Id_Repair_Cost NUMBER(10),
+  Vehicle NUMBER(10) NOT NULL,
+  Date_Repair_Cost DATE NOT NULL,
+  Description_Repair_Cost VARCHAR(150) NOT NULL,
+  Amount_Repair_Cost NUMBER(11,2) NOT NULL,
+  Status_Repair_Cost VARCHAR(10) NULL,
+  CONSTRAINT PkRepairCosts PRIMARY KEY (Id_Repair_Cost),
+  CONSTRAINT FkReCo_Vehicles FOREIGN KEY (Vehicle) REFERENCES Vehicles(Id_Vehicle),
+  CONSTRAINT CoStatusRepairCost CHECK(Status_Repair_Cost IN ('Pending', 'Paid'))
+);
+
+CREATE TABLE Insurance_Claims
+(
+  Id_Insurance_Claim NUMBER(10),
+  Vehicle NUMBER(10) NOT NULL,
+  Policy_Number_Insurance_Claim VARCHAR(15) NOT NULL,
+  Loss_Date_Insurance_Claim DATE NOT NULL,
+  Issue_Date_Insurance_Claim DATE NOT NULL,
+  Nature_Payment_Insurance_Claim VARCHAR(400),
+  Damages_Insurance_Claim VARCHAR(400),
+  CONSTRAINT PkInsuranceClaims PRIMARY KEY (Id_Insurance_Claim),
+  CONSTRAINT FkInCl_Vehicles FOREIGN KEY (Vehicle) REFERENCES Vehicles(Id_Vehicle)
+);
+
+
+CREATE TRIGGER TriSeqServiceTypes BEFORE INSERT ON Service_Types FOR EACH ROW
+BEGIN
+  SELECT SequenceRepairCosts.NEXTVAL INTO :new.Id_Service_Type FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqRepairCosts BEFORE INSERT ON Repair_Costs FOR EACH ROW
+BEGIN
+  SELECT SequenceRepairCosts.NEXTVAL INTO :new.Id_Repair_Cost FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqServiceDetails BEFORE INSERT ON Service_Details FOR EACH ROW
+BEGIN
+  SELECT SequenceServiceDetails.NEXTVAL INTO :new.Id_Service_Detail FROM DUAL;
+END;
+
+CREATE TRIGGER TriggersDrivers BEFORE INSERT ON Drivers FOR EACH ROW
+BEGIN
+  SELECT SequenceDrivers.NEXTVAL INTO :new.Id_Driver FROM DUAL;
+END;
+              
+CREATE TRIGGER TriSeqVehicleTypes BEFORE INSERT ON Vehicle_Types FOR EACH ROW
+BEGIN
+  SELECT SequenceVehicleTypes.NEXTVAL INTO :new.Id_Vehicle_Type FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqVehicles BEFORE INSERT ON Vehicles FOR EACH ROW
+BEGIN
+  SELECT SequenceVehicles.NEXTVAL INTO :new.Id_Vehicle FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqDriverQualifications BEFORE INSERT ON Driver_Qualifications FOR EACH ROW
+BEGIN
+  SELECT SequenceDriverQualifications.NEXTVAL INTO :new.Id_Driver_Qualification FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqVehiclesPerDriver BEFORE INSERT ON VehiclesPer_Driver FOR EACH ROW
+BEGIN
+  SELECT SequenceVehiclesPerDriver.NEXTVAL INTO :new.Id_Vehicle_PerDriver FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqServices BEFORE INSERT ON Services FOR EACH ROW
+BEGIN
+  SELECT SequenceServices.NEXTVAL INTO :new.Id_Service FROM DUAL;
+END;
+
+CREATE TRIGGER TriSeqInsuranceClaims BEFORE INSERT ON Insurance_Claims FOR EACH ROW
+BEGIN
+  SELECT SequenceInsuranceClaims.NEXTVAL INTO :new.Id_Insurance_Claim FROM DUAL;
+END;
