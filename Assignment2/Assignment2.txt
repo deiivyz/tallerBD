@@ -183,6 +183,29 @@ BEGIN
   SELECT SequenceInsuranceClaims.NEXTVAL INTO :new.Id_Insurance_Claim FROM DUAL;
 END;
 
+-- PUNTO 5
+CREATE OR REPLACE FUNCTION nameService (idVehicle IN NUMBER)
+RETURN VARCHAR IS
+    nameSer VARCHAR(30) := '';
+    milage VARCHAR(10) := '';
+    existService NUMBER := 0;
+BEGIN
+    SELECT TRUNC(MILEAGE_VEHICLE / 3000) * 3000 INTO milage
+    FROM VEHICLES WHERE ID_VEHICLE = idVehicle;
+    
+    nameSer := milage || '_service';
+    
+    SELECT COUNT(*) INTO existService FROM SERVICES 
+    WHERE NAME_SERVICE = nameSer AND VEHICLE = idVehicle;
+    
+    IF existService > 0
+        THEN
+        nameSer := '';
+    END IF;
+    
+    RETURN nameSer;
+END;
+
 -- PUNTO 6
 CREATE OR REPLACE PROCEDURE newService(idVehicle IN NUMBER) AS
     nameSer VARCHAR(30) := '';
